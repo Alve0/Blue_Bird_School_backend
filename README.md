@@ -2,18 +2,34 @@
 
 ## Setup
 
+Install dependencies:
+
 ```bash
 bun install
 ```
 
-Create a `.env` file with the required values:
+Create a `.env` file:
 
 ```bash
 DATABASE_URL=your_postgresql_connection_string
-JWT_SECRET=your_long_random_secret
+JWT_SECRET=your_random_secret_at_least_32_bytes
+BETTER_AUTH_SECRET=your_separate_better_auth_secret
+BETTER_AUTH_URL=http://localhost:5000
+FRONTEND_URL=http://localhost:3000
 ```
 
-Keep secrets out of source control. `JWT_SECRET` is required by the JWT helpers.
+Generate `JWT_SECRET` and `BETTER_AUTH_SECRET` as separate random secrets.
+The JWT secret must be at least 32 bytes. Keep secrets out of source control.
+
+Apply database migrations before starting the server:
+
+```bash
+bunx prisma migrate dev
+```
+
+The auth migration stops if it finds existing `Submission` rows without an
+owner. Assign those rows to real users before applying the migration; it will
+not invent or assign owners automatically.
 
 ## Commands
 
@@ -26,7 +42,11 @@ bun run typecheck
 
 ## Request helpers
 
-`catchAsync` forwards synchronous throws and rejected promises to Express's global error handler by default. An optional local error handler can handle an error itself, call `next()` to continue the middleware chain, or forward an error with `next(error)`. Errors thrown or rejected by the local handler are forwarded globally.
+`catchAsync` forwards synchronous throws and rejected promises to Express's
+global error handler by default. An optional local error handler can handle an
+error itself, call `next()` to continue the middleware chain, or forward an
+error with `next(error)`. Errors thrown or rejected by a local handler are
+forwarded globally.
 
 ```ts
 import { catchAsync } from "./utils/catchAsync";
@@ -42,34 +62,30 @@ router.get(
 ```
 
 `sendResponse` consistently sends `{ status: "success", message, data? }`.
-`globalErrorHandler` is registered after the routes and sends
-`{ status: "fail" | "error", message }`. For errors with status 500 or greater,
-it logs the error and returns a generic message instead of exposing internals.
+`globalErrorHandler` is registered after the routes and returns a generic
+message for server errors.
 
-## JWT authentication
+## Authentication endpoints
 
-The JWT helpers are separate from the existing Better Auth endpoints.
-`createAccessToken` signs a user's `userId` and `role` with `JWT_SECRET` and
-defaults to a one-day expiration. `authenticateJwt` verifies Bearer tokens and
-sets the typed payload on `req.user`; missing, invalid, or expired tokens are
-forwarded as HTTP 401 errors.
+The `/api/v1/auth` routes use Better Auth for password hashing. Successful
+sign-in also issues a 15-minute JWT bound to the Better Auth session. The
+session is checked in the database on each protected request, so sign-out
+invalidates existing access tokens.
 
-```ts
-import { authenticateJwt } from "./middleware/authenticateJwt";
-import { catchAsync } from "./utils/catchAsync";
-import { sendResponse } from "./utils/sendResponse";
-
-router.get(
-  "/my-submissions",
-  authenticateJwt,
-  catchAsync(async (req, res) => {
-    const submissions = await prisma.submission.findMany({
-      where: { userId: req.user!.userId },
-    });
-    sendResponse(res, 200, "Your submissions", submissions);
-  }),
-);
+```text
+POST /api/v1/auth/signup   { "name", "email", "password" }
+POST /api/v1/auth/signin   { "email", "password" }
+GET  /api/v1/auth/me       Authorization: Bearer <accessToken>
+POST /api/v1/auth/signout  Authorization: Bearer <accessToken>
 ```
 
-Use `createAccessToken({ userId, role })` after authenticating a user to issue
-an access token. Only pass trusted user IDs and roles from your database.
+Sign-up returns the newly created user's public profile. Emails are normalized
+to lowercase, and duplicate email addresses are rejected. PostgreSQL also
+enforces case-insensitive email uniqueness. Email verification and
+forgot-password/reset endpoints are disabled until a secure email delivery
+provider is configured.
+
+Protect additional endpoints with `authenticateJwt`, then use `req.user` for
+the verified user ID and current database role. Continue using `catchAsync` and
+`sendResponse` for route handlers. Access tokens expire after 15 minutes; the
+user can sign in again to create another.
