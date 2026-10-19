@@ -8,6 +8,8 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "types": ["bun"],
+    "rootDir": "./",
+    "outDir": "./dist",
 
     // Bundler mode
     "moduleResolution": "bundler",
@@ -25,6 +27,11 @@
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
+    "noPropertyAccessFromIndexSignature": false,
+
+    "esModuleInterop": true,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["index.ts", "src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

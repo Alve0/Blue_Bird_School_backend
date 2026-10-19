@@ -4,10 +4,15 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun run build && bun dist/index.js",
     "typecheck": "bun check"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "prisma": "^7.10.1",
@@ -21,7 +26,7 @@
     "@prisma/client": "7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",
-    "experss": "^0.0.1-security",
+    "express": "^5.1.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.1"
   }
