@@ -1,0 +1,12 @@
+model Submission {
+    id          String   @id @default(uuid())
+    projectName String
+    repoUrl     String   @unique // Prevents duplicate repository submission URLs
+    liveLink    String
+    description String
+    status      Status   @default(PENDING)
+    userId      String
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}
