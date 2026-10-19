@@ -43,42 +43,28 @@ export async function register(input: RegisterInput) {
   }
 
   try {
-    await betterAuth.api.signUpEmail({
+    const registration = await betterAuth.api.signUpEmail({
       body: {
         name: input.name,
         email: input.email,
         password: input.password,
       },
     });
+
+    if (!registration.token) {
+      throw new Error("Sign-up did not create an authentication session");
+    }
+
+    return createAuthenticatedSession(
+      registration.user.id,
+      registration.token,
+    );
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       throw duplicateEmailError();
     }
     throw error;
   }
-
-  const user = await prisma.user.findFirst({
-    where: {
-      email: {
-        equals: input.email,
-        mode: "insensitive",
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      createdAt: true,
-    },
-  });
-  if (!user) {
-    throw new Error("Created account could not be loaded");
-  }
-
-  return {
-    user,
-  };
 }
 
 export async function signIn(input: SignInInput) {
@@ -89,28 +75,35 @@ export async function signIn(input: SignInInput) {
       rememberMe: true,
     },
   });
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-    },
-  });
-  const storedSession = await prisma.session.findUnique({
-    where: { token: session.token },
-    select: { id: true, userId: true },
-  });
+  return createAuthenticatedSession(session.user.id, session.token);
+}
+
+async function createAuthenticatedSession(userId: string, sessionToken: string) {
+  const [user, storedSession] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    }),
+    prisma.session.findUnique({
+      where: { token: sessionToken },
+      select: { id: true, userId: true },
+    }),
+  ]);
 
   if (!user || !storedSession) {
-    await prisma.session.deleteMany({ where: { token: session.token } });
-    throw new Error("Sign-in session could not be loaded");
+    await prisma.session.deleteMany({ where: { token: sessionToken } });
+    throw new Error("Authentication session could not be loaded");
   }
 
   if (storedSession.userId !== user.id) {
-    await prisma.session.deleteMany({ where: { token: session.token } });
-    throw new Error("Sign-in session does not match the account");
+    await prisma.session.deleteMany({ where: { token: sessionToken } });
+    throw new Error("Authentication session does not match the account");
   }
 
   let accessToken: string;

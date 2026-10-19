@@ -68,8 +68,8 @@ message for server errors.
 ## Authentication endpoints
 
 The `/api/v1/auth` routes use Better Auth for password hashing. Successful
-sign-in also issues a 15-minute JWT bound to the Better Auth session. The
-session is checked in the database on each protected request, so sign-out
+signup and sign-in issue a 15-minute JWT bound to the Better Auth session.
+The session is checked in the database on each protected request, so sign-out
 invalidates existing access tokens.
 
 ```text
@@ -79,8 +79,9 @@ GET  /api/v1/auth/me       Authorization: Bearer <accessToken>
 POST /api/v1/auth/signout  Authorization: Bearer <accessToken>
 ```
 
-Sign-up returns the newly created user's public profile. Emails are normalized
-to lowercase, and duplicate email addresses are rejected. PostgreSQL also
+Signup returns the user's public profile and access token, so a separate
+sign-in is not needed after account creation. Emails are normalized to
+lowercase, and duplicate email addresses are rejected. PostgreSQL also
 enforces case-insensitive email uniqueness. Email verification and
 forgot-password/reset endpoints are disabled until a secure email delivery
 provider is configured.
@@ -89,3 +90,24 @@ Protect additional endpoints with `authenticateJwt`, then use `req.user` for
 the verified user ID and current database role. Continue using `catchAsync` and
 `sendResponse` for route handlers. Access tokens expire after 15 minutes; the
 user can sign in again to create another.
+
+## Teacher submission dashboard
+
+Teacher endpoints require a JWT for a `MENTOR` account. They support server-side
+filtering, page/limit pagination, submission counts, and reviewing pending
+submissions. Pages default to 1, page size defaults to 20, and page size is
+capped at 100.
+
+```text
+GET   /api/v1/teacher/statistics
+GET   /api/v1/teacher/submissions?page=1&limit=20
+GET   /api/v1/teacher/submissions?status=APPROVED&page=1&limit=20
+GET   /api/v1/teacher/submissions?status=REJECTED&page=1&limit=20
+PATCH /api/v1/teacher/submissions/:submissionId/approve
+PATCH /api/v1/teacher/submissions/:submissionId/reject
+```
+
+Statistics include total, pending, approved, and rejected counts. Submission
+results include all submission fields and the submitter's public name/email.
+Only pending submissions can be approved or rejected; repeated or conflicting
+reviews return `409 Conflict`.

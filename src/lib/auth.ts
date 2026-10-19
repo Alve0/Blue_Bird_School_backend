@@ -15,7 +15,6 @@ export const auth = betterAuth({
   trustedOrigins,
   emailAndPassword: {
     enabled: true,
-    autoSignIn: false,
   },
   user: {
     additionalFields: {

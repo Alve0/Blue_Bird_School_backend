@@ -44,13 +44,13 @@ function passwordFrom(body: RequestBody, field: string): string {
 
 export const registerController: RequestHandler = catchAsync(async (req, res) => {
   const body = bodyOf(req);
-  const { user } = await authService.register({
+  const result = await authService.register({
     name: requiredString(body, "name", { trim: true }),
     email: requiredString(body, "email", { trim: true }).toLowerCase(),
     password: passwordFrom(body, "password"),
   });
 
-  sendResponse(res, 201, "Account created successfully", user);
+  sendResponse(res, 201, "Account created successfully", result);
 });
 
 export const signInController: RequestHandler = catchAsync(async (req, res) => {
