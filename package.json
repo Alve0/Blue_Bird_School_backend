@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "tsc",
     "start": "bun run build && bun dist/index.js",
     "typecheck": "bun check"
   },

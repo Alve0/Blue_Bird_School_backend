@@ -40,8 +40,12 @@ function parseStatus(value: unknown): Status | undefined {
 }
 
 function bodyOf(req: Request): Record<string, unknown> {
+  if (req.body === undefined) {
+    return {};
+  }
+
   if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-    throw badRequest("A JSON request body is required");
+    throw badRequest("Request body must be a JSON object");
   }
 
   return req.body as Record<string, unknown>;

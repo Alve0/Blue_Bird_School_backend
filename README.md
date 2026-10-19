@@ -91,6 +91,29 @@ the verified user ID and current database role. Continue using `catchAsync` and
 `sendResponse` for route handlers. Access tokens expire after 15 minutes; the
 user can sign in again to create another.
 
+## Student submission portal
+
+Student endpoints require a JWT for a `STUDENT` account. Project submission
+fields are validated on the server: project name (3-120 characters), repository
+URL and live link (HTTP/HTTPS URLs without embedded credentials), and
+description (20-5000 characters). Repository URL fragments, queries, trailing
+slashes, and `.git` suffixes are normalized before duplicate checks.
+
+```text
+POST /api/v1/student/submissions
+GET  /api/v1/student/submissions?page=1&limit=20
+GET  /api/v1/student/submissions/:submissionId
+```
+
+Submit JSON with `projectName`, `repoUrl`, `liveLink`, and `description`.
+Repository URLs are unique across submissions, enforced in both the service
+and database. Each student can make up to five submission attempts per hour;
+excess requests receive HTTP 429 and a `Retry-After` header. The rate limit is
+in-memory and resets if the server restarts. The GET endpoint returns only the
+authenticated student's submissions with pagination metadata. The detail
+endpoint returns one submission only when it belongs to the authenticated
+student; otherwise it responds with `404`.
+
 ## Teacher submission dashboard
 
 Teacher endpoints require a JWT for a `MENTOR` account. They support server-side
