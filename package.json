@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsup src/index.ts --format esm --clean",
     "start": "bun run build && bun dist/index.js",
     "typecheck": "bun check"
   },
@@ -17,9 +17,8 @@
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "prisma": "^7.10.1",
-    "tsx": "^4.23.15"
-  },
-  "peerDependencies": {
+    "tsup": "^9.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {

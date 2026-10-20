@@ -40,6 +40,14 @@ bun start
 bun run typecheck
 ```
 
+## Vercel deployment
+
+Vercel builds `src/index.ts` as the Express function entry point. It exports the
+app directly, and starts a local listener only outside production. `bun start`
+compiles the app and runs the output with Bun. Configure
+`DATABASE_URL`, `JWT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and
+`FRONTEND_URL` in the Vercel project's environment variables.
+
 ## Request helpers
 
 `catchAsync` forwards synchronous throws and rejected promises to Express's

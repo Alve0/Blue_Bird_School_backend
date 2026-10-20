@@ -1,4 +1,4 @@
-import type { Request, RequestHandler } from "express";
+import type { Request, RequestHandler, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import * as studentService from "./student.service";
@@ -54,7 +54,9 @@ function validatedUrl(value: string, field: string): string {
     url.username ||
     url.password
   ) {
-    throw badRequest(`${field} must be an HTTP or HTTPS URL without credentials`);
+    throw badRequest(
+      `${field} must be an HTTP or HTTPS URL without credentials`,
+    );
   }
 
   url.hash = "";
@@ -109,10 +111,7 @@ export const createSubmissionController: RequestHandler = catchAsync(
 
     const submission = await studentService.createSubmission(req.user.userId, {
       projectName: requiredText(body, "projectName", 3, 120),
-      repoUrl: validatedUrl(
-        requiredText(body, "repoUrl", 1, 2048),
-        "repoUrl",
-      ),
+      repoUrl: validatedUrl(requiredText(body, "repoUrl", 1, 2048), "repoUrl"),
       liveLink: validatedUrl(
         requiredText(body, "liveLink", 1, 2048),
         "liveLink",
@@ -125,7 +124,7 @@ export const createSubmissionController: RequestHandler = catchAsync(
 );
 
 export const studentSubmissionListController: RequestHandler = catchAsync(
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     if (!req.user) {
       throw Object.assign(new Error("Authentication is required"), {
         statusCode: 401,
